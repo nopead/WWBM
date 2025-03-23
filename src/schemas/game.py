@@ -17,8 +17,8 @@ class Game(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     player_id: Mapped[int] = mapped_column("user.id")
     start_date: Mapped[datetime.datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
-    end_date: Mapped[datetime.datetime]
-    finish_reason: Mapped[int] = mapped_column(ForeignKey("game_finish_reason.id"))
+    end_date: Mapped[datetime.datetime | None]
+    finish_reason: Mapped[int] = mapped_column(ForeignKey("game_finish_reason.id"), nullable=True)
     prize: Mapped[int] = mapped_column(server_default=text("0"))
 
 
