@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query, HTTPException
-from src.models.game import Game
+from src.models.game import Game, GameAnswersHistory
 from src.db.database import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.crud.games import GameService
@@ -24,7 +24,7 @@ async def get(
 ):
     try:
         sort_params = []
-        allowed_fields = {"start_date", "end_date", "prize"}
+        allowed_fields = {"start_date", "end_date", "prize_amount"}
         allowed_directions = {"asc", "desc"}
 
         for param in sort_by:
@@ -94,10 +94,24 @@ async def reset_prize(
     )
 
 
-@router.get("/details/{game_id}")
-async def get_details(game_id: int, session: AsyncSession = Depends(get_session)):
-    pass
+@router.post("/add-answer-in-history")
+async def add_answer_in_history(
+        data: GameAnswersHistory,
+        session: AsyncSession = Depends(get_session)
+):
+    return await GameService.add_answer_in_history(
+        data=data,
+        session=session
+    )
 
-@router.post("/add_detail")
-async def add_detail(data, session: AsyncSession = Depends(get_session)):
-    pass
+
+@router.post("/finish/{game_id}", response_model=Game)
+async def finish(
+        id: int,
+        session: AsyncSession = Depends(get_session)
+):
+    return await GameService.finish(
+        id=id,
+        finish_reason=2,
+        session=session
+    )

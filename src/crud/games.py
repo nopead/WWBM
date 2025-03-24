@@ -1,6 +1,11 @@
 import datetime
 from fastapi import HTTPException
-from src.schemas.game import Game as GameORM, Prize as PrizeORM
+from src.schemas.game import (Game as GameORM,
+                              Prize as PrizeORM,
+                              GameFinishReason as GameFinishReasonORM,
+                              GameAnswersHistory as GameAnswersHistoryORM)
+from src.models.game import (Game as GameModel,
+                             GameAnswersHistory as GameAnswerHistoryModel)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, asc, desc
 from typing import List, Literal, Tuple
@@ -14,24 +19,26 @@ class GameService:
             offset: int = 0,
             limit: int = 100,
             sort_by: List[Tuple[
-                Literal["start_date", "end_date", "amount"],
+                Literal["start_date", "end_date", "prize_amount"],
                 Literal["asc", "desc"]
             ]] = [("start_date", "desc")]
     ):
 
-        stmt = select(
+        stmt = (select(
             GameORM.id,
             GameORM.player_id,
             GameORM.start_date,
             GameORM.end_date,
-            GameORM.finish_reason,
+            GameFinishReasonORM.name.label("finish_reason"),
             PrizeORM.amount.label("prize_amount"),
-        ).select_from(GameORM).join(PrizeORM, PrizeORM.id == GameORM.prize)
+        ).select_from(GameORM)
+                .join(PrizeORM, PrizeORM.id == GameORM.prize)
+                .join(GameFinishReasonORM, GameFinishReasonORM.id == GameORM.finish_reason))
 
         column_map = {
             "start_date": GameORM.start_date,
             "end_date": GameORM.end_date,
-            "amount": PrizeORM.amount
+            "prize_amount": PrizeORM.amount
         }
 
         for field, direction in sort_by:
@@ -130,7 +137,13 @@ class GameService:
     ):
         game_orm = await session.get(GameORM, game_id)
         if game_orm:
-            game_orm.prize = 1
+            reset_prize_id = 1
+            if 6 <= game_orm.prize < 10:
+                reset_prize_id = 6
+            elif 11 <= game_orm.prize < 16:
+                reset_prize_id = 11
+
+            game_orm.prize = reset_prize_id
             await session.commit()
             return game_orm
         else:
@@ -140,9 +153,54 @@ class GameService:
             )
 
     @staticmethod
-    async def finish(game_id: int, finish_reason: int, session: AsyncSession):
-        pass
+    async def finish(id: int, finish_reason: int, session: AsyncSession):
+        game_orm = await session.get(GameORM, id)
+        if game_orm:
+            if game_orm.finish_reason is None:
+                try:
+                    game_orm.finish_reason = finish_reason
+                    game_orm.end_date = datetime.datetime.utcnow()
+                    await session.commit()
+                    finish_reason_str = await session.get(GameFinishReasonORM, finish_reason)
+                    return GameModel(
+                        id=game_orm.id,
+                        player_id=game_orm.player_id,
+                        start_date=game_orm.start_date,
+                        end_date=game_orm.end_date,
+                        finish_reason=finish_reason_str.name,
+                        prize=game_orm.prize
+                    )
+                except Exception as e:
+                    await session.rollback()
+                    raise e
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail="game already finished"
+                )
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="game not found"
+            )
 
     @staticmethod
     async def get_details(game_id: int, session: AsyncSession):
         pass
+
+    @staticmethod
+    async def add_answer_in_history(
+        data: GameAnswerHistoryModel,
+        session: AsyncSession
+    ):
+        try:
+            history_el_data = data.model_dump()
+            history_el_orm = GameAnswersHistoryORM(**history_el_data)
+
+            session.add(history_el_orm)
+            await session.flush()
+            await session.commit()
+            return data
+        except Exception as e:
+            await session.rollback()
+            raise e

@@ -31,5 +31,5 @@ class GameAnswersHistory(MyBaseModel):
     game_id: int
     question_number: int
     question_id: int
-    answer_id: int
+    answer: int
 
