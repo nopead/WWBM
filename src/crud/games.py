@@ -17,7 +17,7 @@ class GameService:
     async def get(
             session: AsyncSession,
             offset: int = 0,
-            limit: int = 100,
+            limit: int = 10,
             sort_by: List[Tuple[
                 Literal["start_date", "end_date", "prize_amount"],
                 Literal["asc", "desc"]

@@ -11,10 +11,9 @@ class LeaderBoardResult(MyBaseModel):
 
 
 class UserResult(MyBaseModel):
-    game_id: int
-    game_date: date
-    start_time: time
-    end_time: time
+    id: int
+    date: date
+    duration: int
     questions_amount: int
     result: str
     prize: int
