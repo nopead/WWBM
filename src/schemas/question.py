@@ -6,7 +6,7 @@ from typing import List
 
 class Question(Base):
 
-    __tablename__ = "question"
+    __tablename__ = "questions"
     __table_args__ = (
         CheckConstraint("hardness_level BETWEEN 1 AND 3", "CK__question__hardness_level"),
         CheckConstraint("correct_answer BETWEEN 1 AND 4", "CK__question__correct_answer"),
@@ -35,7 +35,7 @@ class AnswersOnQuestion(Base):
 
     answer_id: Mapped[int]
     text: Mapped[str]
-    question_id: Mapped[int] = mapped_column(ForeignKey("question.id"))
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"))
 
     question: Mapped["Question"] = relationship(
         back_populates="answers",

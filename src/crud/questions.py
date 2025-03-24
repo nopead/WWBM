@@ -8,7 +8,11 @@ from src.schemas.question import Question as QuestionORM, AnswersOnQuestion as A
 
 class QuestionService:
     @staticmethod
-    async def get(offset: int, limit: int, session: AsyncSession):
+    async def get(
+            offset: int,
+            limit: int,
+            session: AsyncSession
+    ):
         try:
             stmt = select(QuestionORM).offset(offset).limit(limit)
             result = await session.execute(stmt)
@@ -38,9 +42,11 @@ class QuestionService:
             await session.rollback()
             raise e
 
-
     @staticmethod
-    async def add(data: QuestionSetterModel, session: AsyncSession):
+    async def add(
+            data: QuestionSetterModel,
+            session: AsyncSession
+    ):
         try:
             question_data = data.model_dump(exclude={'answers'})
             question_orm = QuestionORM(**question_data)

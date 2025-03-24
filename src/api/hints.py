@@ -13,7 +13,7 @@ router = APIRouter(
 
 
 @router.get("/", response_model=list[HintGetter])
-async def get_all(
+async def get(
         offset: int = 0,
         limit: int = 10,
         session: AsyncSession = Depends(get_session)
@@ -27,33 +27,34 @@ async def get_all(
 
 @router.get("/{hint_id}", response_model=HintGetter | HTTPResponse)
 async def get_by_id(
-        hint_id: int,
+        id: int,
         session: AsyncSession = Depends(get_session)
 ):
     return await HintService.get_by_id(
-        hint_id=hint_id,
+        id=id,
         session=session
     )
 
 
 @router.post("/", response_model=HintSetter | HTTPResponse)
-async def add_new(
-        hint: HintSetter,
-        session: AsyncSession = Depends(get_session)):
+async def add(
+        data: HintSetter,
+        session: AsyncSession = Depends(get_session)
+):
     return await HintService.add(
-        hint,
-        session
+        data=data,
+        session=session
     )
 
 
 @router.put("/", response_model=HintGetter | HTTPResponse)
 async def update(
-        hint_id: int,
+        id: int,
         new_data: HintSetter,
         session: AsyncSession = Depends(get_session)
 ):
     return await HintService.update(
-        hint_id=hint_id,
+        id=id,
         new_data=new_data,
         session=session
     )
@@ -61,10 +62,10 @@ async def update(
 
 @router.delete("/{hint_id}", response_model=HTTPResponse)
 async def delete(
-        hint_id: int,
+        id: int,
         session: AsyncSession = Depends(get_session)
 ):
     return await HintService.delete(
-        hint_id,
-        session
+        id=id,
+        session=session
     )

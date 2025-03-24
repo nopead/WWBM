@@ -18,9 +18,9 @@ class HintService:
             raise e
 
     @staticmethod
-    async def get_by_id(hint_id: int, session: AsyncSession):
+    async def get_by_id(id: int, session: AsyncSession):
         try:
-            stmt = select(HintORM).filter(HintORM.id == hint_id)
+            stmt = select(HintORM).filter(HintORM.id == id)
             hint = await session.execute(stmt)
             return hint.scalars().first()
         except Exception as e:
@@ -28,9 +28,9 @@ class HintService:
             raise e
 
     @staticmethod
-    async def add(new_hint: HintDataModel, session: AsyncSession):
+    async def add(data: HintDataModel, session: AsyncSession):
         try:
-            new_hint_inst = HintORM(name=new_hint.name, icon_link=new_hint.icon_link)
+            new_hint_inst = HintORM(name=data.name, icon_link=data.icon_link)
             session.add(new_hint_inst)
             await session.flush()
             await session.commit()
@@ -40,8 +40,8 @@ class HintService:
             raise e
 
     @staticmethod
-    async def update(hint_id: int, new_data: HintDataModel, session: AsyncSession):
-        hint = await session.get(HintORM, hint_id)
+    async def update(id: int, new_data: HintDataModel, session: AsyncSession):
+        hint = await session.get(HintORM, id)
         if hint:
             try:
                 hint.name = new_data.name
@@ -55,8 +55,8 @@ class HintService:
             return HTTPResponse(status_code=404, detail="hint not found")
 
     @staticmethod
-    async def delete(hint_id: int, session: AsyncSession):
-        select_stmt = select(HintORM).filter(HintORM.id == hint_id)
+    async def delete(id: int, session: AsyncSession):
+        select_stmt = select(HintORM).filter(HintORM.id == id)
         select_result = await session.execute(select_stmt)
         hint = select_result.scalars().first()
         if hint:

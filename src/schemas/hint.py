@@ -5,7 +5,7 @@ from .base import Base
 
 class Hint(Base):
 
-    __tablename__ = 'hint'
+    __tablename__ = 'hints'
 
     id: Mapped[int] = mapped_column(sa.Identity(), primary_key=True)
     name: Mapped[str] = mapped_column(unique=True)
