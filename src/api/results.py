@@ -103,4 +103,7 @@ async def get_game_details(
         game_id: int,
         session: AsyncSession = Depends(get_session)
 ):
-    pass
+    return await ResultsService.get_details(
+        game_id=game_id,
+        session=session
+    )

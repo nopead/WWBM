@@ -35,7 +35,7 @@ class HintsUseHistory(Base):
 
     __tablename__ = 'hints_use_history'
     __table_args__ = (
-        PrimaryKeyConstraint("game_id", "hint_id", name="PK__hints_use_history"),
+        PrimaryKeyConstraint("game_id", "hint_id", "question_number", name="PK__hints_use_history"),
         CheckConstraint("question_number BETWEEN 1 AND 15", name="CK__hints_use_history__question_number"),
     )
 
@@ -48,7 +48,7 @@ class GameAnswersHistory(Base):
 
     __tablename__ = 'game_answers_history'
     __table_args__ = (
-        PrimaryKeyConstraint("game_id", "question_number", name="PK__game_answers_history"),
+        PrimaryKeyConstraint("game_id", "question_number", "question_id", name="PK__game_answers_history"),
         CheckConstraint("question_number BETWEEN 1 AND 15", "CK__game_answers_history__question_number"),
         CheckConstraint("answer BETWEEN 1 AND 4", "CK__game_answers_history__answer"),
     )

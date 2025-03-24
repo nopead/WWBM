@@ -20,9 +20,9 @@ class UserResult(MyBaseModel):
 
 
 class UserResultDetail(MyBaseModel):
-    question_id: int
+    question_number: int
     question_text: str
     user_answer: str
-    rigth_answer: str
+    right_answer: str
     hint: str
     prize: int
