@@ -108,10 +108,11 @@ async def add_answer_in_history(
 @router.post("/finish/{game_id}", response_model=Game)
 async def finish(
         id: int,
+        finish_reason: int,
         session: AsyncSession = Depends(get_session)
 ):
     return await GameService.finish(
         id=id,
-        finish_reason=2,
+        finish_reason=finish_reason,
         session=session
     )
