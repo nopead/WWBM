@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from sqlalchemy import ForeignKey, CheckConstraint, PrimaryKeyConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 from src.schemas.auth import User
-from .base import Base, str_50
+from .base import Base
 
 
 class Prize(Base):
@@ -17,7 +17,7 @@ class GameFinishReason(Base):
     __tablename__ = 'game_finish_reason'
 
     id: Mapped[int] = mapped_column(sa.Identity(), primary_key=True)
-    name: Mapped[str_50]
+    name: Mapped[str]
 
 
 class Game(Base):
