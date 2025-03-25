@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.hint import HintSetter, HintGetter
 from src.crud.hints import HintService
 from src.db.database import get_session
+from src.api.security import security
+from authx import TokenPayload
 
 
 router = APIRouter(
@@ -38,11 +40,13 @@ async def get_by_id(
 @router.post("/", response_model=HintSetter | None)
 async def add(
         data: HintSetter,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await HintService.add(
         data=data,
-        session=session
+        session=session,
+        payload=payload
     )
 
 
@@ -50,21 +54,25 @@ async def add(
 async def update(
         id: int,
         new_data: HintSetter,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await HintService.update(
         id=id,
         new_data=new_data,
-        session=session
+        session=session,
+        payload=payload
     )
 
 
 @router.delete("/{hint_id}", response_model=None)
 async def delete(
         id: int,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await HintService.delete(
         id=id,
-        session=session
+        session=session,
+        payload=payload
     )

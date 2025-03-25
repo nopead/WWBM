@@ -1,5 +1,5 @@
 import datetime
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from src.schemas.game import (Game as GameORM,
                               Prize as PrizeORM,
                               GameFinishReason as GameFinishReasonORM,
@@ -9,6 +9,7 @@ from src.models.game import (Game as GameModel,
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, asc, desc
 from typing import List, Literal, Tuple
+from authx import TokenPayload
 from src.crud.users import UserService
 
 
@@ -64,28 +65,18 @@ class GameService:
 
     @staticmethod
     async def add(
-            player_id: int,
-            session: AsyncSession
+            session: AsyncSession,
+            payload: TokenPayload
     ):
         try:
-            is_player_exists = await UserService.is_exists(
-                id=player_id,
+            user_id = await UserService.get_user_id_by_login(
+                login=payload.sub,
                 session=session
             )
 
-            print("checking player on exists")
-
-            if not is_player_exists:
-                raise HTTPException(
-                    status_code=404,
-                    detail="player not found"
-                )
-
-            print("player exists")
-
             existing_game = await session.execute(
                 select(GameORM).where(
-                    GameORM.player_id == player_id,
+                    GameORM.player_id == user_id,
                     GameORM.end_date.is_(None),
                     GameORM.finish_reason.is_(None)
                 )
@@ -99,7 +90,7 @@ class GameService:
 
             # Create new game if no active games exist
             new_game = GameORM(
-                player_id=player_id,
+                player_id=user_id,
                 start_date=datetime.datetime.utcnow(),
                 end_date=None,
                 prize=1
@@ -116,14 +107,38 @@ class GameService:
     @staticmethod
     async def increase_prize(
             game_id: int,
-            session: AsyncSession
+            session: AsyncSession,
+            payload: TokenPayload
     ):
         game_orm = await session.get(GameORM, game_id)
+
         if game_orm:
-            if game_orm.prize < 16:
-                game_orm.prize += 1
-                await session.commit()
-                return game_orm
+            user_id = await UserService.get_user_id_by_login(
+                login=payload.sub,
+                session=session
+            )
+
+            if game_orm.player_id != user_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Forbidden"
+                )
+
+            if game_orm.finish_reason:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Forbidden to update prizes to finished games"
+                )
+            else:
+                if game_orm.prize < 16:
+                    game_orm.prize += 1
+                    await session.commit()
+                    return game_orm
+                else:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="max prize already"
+                    )
         else:
             raise HTTPException(
                 status_code=404,
@@ -133,10 +148,23 @@ class GameService:
     @staticmethod
     async def reset_prize(
             game_id: int,
-            session: AsyncSession
+            session: AsyncSession,
+            payload: TokenPayload
     ):
         game_orm = await session.get(GameORM, game_id)
         if game_orm:
+
+            user_id = await UserService.get_user_id_by_login(
+                login=payload.sub,
+                session=session
+            )
+
+            if game_orm.player_id != user_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Forbidden"
+                )
+
             reset_prize_id = 1
             if 6 <= game_orm.prize < 10:
                 reset_prize_id = 6
@@ -153,9 +181,26 @@ class GameService:
             )
 
     @staticmethod
-    async def finish(id: int, finish_reason: int, session: AsyncSession):
+    async def finish(
+            id: int,
+            finish_reason: int,
+            session: AsyncSession,
+            payload: TokenPayload
+    ):
         game_orm = await session.get(GameORM, id)
         if game_orm:
+
+            user_id = UserService.get_user_id_by_login(
+                login=payload.sub,
+                session=session
+            )
+
+            if game_orm.player_id != user_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Forbidden"
+                )
+
             if game_orm.finish_reason is None:
                 try:
                     game_orm.finish_reason = finish_reason
@@ -175,7 +220,7 @@ class GameService:
                     raise e
             else:
                 raise HTTPException(
-                    status_code=500,
+                    status_code=403,
                     detail="game already finished"
                 )
         else:
@@ -185,15 +230,36 @@ class GameService:
             )
 
     @staticmethod
-    async def get_details(game_id: int, session: AsyncSession):
+    async def get_details(
+        game_id: int,
+        session: AsyncSession,
+        payload: TokenPayload
+    ):
         pass
 
     @staticmethod
     async def add_answer_in_history(
         data: GameAnswerHistoryModel,
-        session: AsyncSession
+        session: AsyncSession,
+        payload: TokenPayload
     ):
         try:
+
+            player_id_record = session.execute(
+                select(GameORM.player_id).select_from(GameORM).filter(GameORM.id == data.game_id)
+            )
+
+            user_id = UserService.get_user_id_by_login(
+                login=payload.sub,
+                session=session
+            )
+
+            if user_id != player_id_record.player_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Forbidden"
+                )
+
             history_el_data = data.model_dump()
             history_el_orm = GameAnswersHistoryORM(**history_el_data)
 

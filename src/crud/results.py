@@ -1,4 +1,3 @@
-import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Tuple, Literal
 from src.schemas.game import Game, GameAnswersHistory, Prize, GameFinishReason, HintsUseHistory
@@ -7,6 +6,10 @@ from src.schemas.question import Question, AnswersOnQuestion
 from src.schemas.hint import Hint
 from sqlalchemy import select, asc, desc, func, case, and_
 from src.models.result import LeaderBoardResult, UserResult, UserResultDetail
+from authx import TokenPayload
+from src.crud.auth import AuthService
+from src.crud.users import UserService
+from fastapi import HTTPException
 
 
 class ResultsService:
@@ -62,11 +65,11 @@ class ResultsService:
             raise e
 
     @staticmethod
-    async def get_user_results(
-            user_id: int,
+    async def get_my_results(
             offset: int,
             limit: int,
             session: AsyncSession,
+            payload: TokenPayload,
             sort_by: List[Tuple[
                 Literal["prize", "duration", "questions_amount", "id", "date"],
                 Literal["desc", "asc"]
@@ -90,7 +93,7 @@ class ResultsService:
                 .join(GameAnswersHistory, GameAnswersHistory.game_id == Game.id)
                 .join(GameFinishReason, GameFinishReason.id == Game.finish_reason)
                 .join(Prize, Prize.id == Game.prize)
-                .filter(Game.player_id == user_id)
+                .filter(Game.player_id == select(User.id).select_from(User).filter(User.login == payload.sub))
                 .group_by(
                     Game.id,
                     func.date(Game.start_date),
@@ -131,9 +134,19 @@ class ResultsService:
     @staticmethod
     async def get_details(
             game_id: int,
-            session: AsyncSession
+            session: AsyncSession,
+            payload: TokenPayload
     ):
         try:
+            game_orm = await session.get(Game, game_id)
+            user_id = UserService.get_user_id_by_login(payload.sub)
+
+            if game_orm.player_id != user_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Forbidden"
+                )
+
             stmt = (
                 select(
                     GameAnswersHistory.question_number.label("question_number"),

@@ -4,6 +4,9 @@ from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from src.models.question import QuestionSetter as QuestionSetterModel, QuestionGetter as QuestionGetterModel, AnswerOnQuestion as AnswerOnQuestionModel
 from src.schemas.question import Question as QuestionORM, AnswersOnQuestion as AnswersOnQuestionORM
+from fastapi import HTTPException
+from src.crud.auth import AuthService
+from authx import TokenPayload
 
 
 class QuestionService:
@@ -38,28 +41,6 @@ class QuestionService:
                 ))
 
             return questions
-        except Exception as e:
-            await session.rollback()
-            raise e
-
-    @staticmethod
-    async def add(
-            data: QuestionSetterModel,
-            session: AsyncSession
-    ):
-        try:
-            question_data = data.model_dump(exclude={'answers'})
-            question_orm = QuestionORM(**question_data)
-
-            for answer in data.answers:
-                answer_data = answer.model_dump()
-                answer_orm = AnswersOnQuestionORM(**answer_data)
-                question_orm.answers.append(answer_orm)
-
-            session.add(question_orm)
-            await session.flush()
-            await session.commit()
-            return data
         except Exception as e:
             await session.rollback()
             raise e
@@ -104,3 +85,36 @@ class QuestionService:
         except SQLAlchemyError as e:
             await session.rollback()
             raise e
+
+    @staticmethod
+    async def add(
+            data: QuestionSetterModel,
+            session: AsyncSession,
+            payload: TokenPayload
+    ):
+        try:
+            if not AuthService.is_user_superuser(
+                    session=session,
+                    login=payload.sub
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Forbidden"
+                )
+            else:
+                question_data = data.model_dump(exclude={'answers'})
+                question_orm = QuestionORM(**question_data)
+
+                for answer in data.answers:
+                    answer_data = answer.model_dump()
+                    answer_orm = AnswersOnQuestionORM(**answer_data)
+                    question_orm.answers.append(answer_orm)
+
+                session.add(question_orm)
+                await session.flush()
+                await session.commit()
+                return data
+        except Exception as e:
+            await session.rollback()
+            raise e
+

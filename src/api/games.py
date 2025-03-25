@@ -4,6 +4,8 @@ from src.models.game import Game, GameAnswersHistory
 from src.db.database import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.crud.games import GameService
+from src.api.security import security
+from authx import TokenPayload
 
 
 router = APIRouter(
@@ -63,45 +65,51 @@ async def get(
 
 @router.post("/", response_model=Game)
 async def register_new_game(
-        player_id: int,
+        payload: TokenPayload = Depends(security.access_token_required),
         session: AsyncSession = Depends(get_session)
 ):
     return await GameService.add(
-        player_id=player_id,
+        payload=payload,
         session=session
     )
 
 
-@router.post("/update-prize")
+@router.patch("/update-prize")
 async def increase_prize(
         game_id: int,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await GameService.increase_prize(
         game_id,
-        session
+        session,
+        payload=payload
     )
 
 
-@router.post("/reset-prize")
+@router.patch("/reset-prize")
 async def reset_prize(
         game_id: int,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await GameService.reset_prize(
         game_id=game_id,
-        session=session
+        session=session,
+        payload=payload
     )
 
 
 @router.post("/add-answer-in-history")
 async def add_answer_in_history(
         data: GameAnswersHistory,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await GameService.add_answer_in_history(
         data=data,
-        session=session
+        session=session,
+        payload=payload
     )
 
 
@@ -109,10 +117,12 @@ async def add_answer_in_history(
 async def finish(
         id: int,
         finish_reason: int,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await GameService.finish(
         id=id,
         finish_reason=finish_reason,
-        session=session
+        session=session,
+        payload=payload
     )

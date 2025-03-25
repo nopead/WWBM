@@ -1,19 +1,10 @@
-from fastapi import APIRouter, Depends, Response
-from authx import AuthXConfig, AuthX
-from src.config import JWT_SECRET_KEY
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.database import get_session
 from src.crud.auth import AuthService
 from src.models.auth import UserLoginModel, UserRegistrationModel
-
-
-auth_config = AuthXConfig()
-auth_config.JWT_SECRET_KEY = JWT_SECRET_KEY
-auth_config.JWT_ACCESS_COOKIE_NAME = "wwbm_user"
-auth_config.JWT_TOKEN_LOCATION = ["cookies"]
-
-security = AuthX(config=auth_config)
-
+from authx import TokenPayload
+from src.api.security import security
 
 router = APIRouter(
     prefix="/auth",
@@ -21,10 +12,11 @@ router = APIRouter(
 )
 
 
-@router.post("/send_verification_code")
+@router.post("/send_verification_code/{login}")
 async def send_verification_code(
         login: str,
-        session: AsyncSession = Depends(get_session)):
+        session: AsyncSession = Depends(get_session)
+):
     return await AuthService.set_verification_code(
         login=login,
         session=session
@@ -33,7 +25,36 @@ async def send_verification_code(
 
 @router.post("/login")
 async def login(
-        data: UserLoginModel,
-        response: Response
+        creds: UserLoginModel,
+        session: AsyncSession = Depends(get_session)
 ):
-    pass
+    return await AuthService.validate_login(
+        creds=creds,
+        session=session,
+        security=security
+    )
+
+
+@router.post("/registrate")
+async def registrate(
+        creds: UserRegistrationModel,
+        session: AsyncSession = Depends(get_session)
+):
+    return await AuthService.validate_registration(
+        creds=creds,
+        session=session
+    )
+
+
+@router.delete("/delete_user/{login}")
+async def delete_user(
+        login: str,
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required)
+):
+    return await AuthService.delete_user(
+        session=session,
+        payload=payload,
+        login=login
+    )
+

@@ -4,6 +4,8 @@ from src.db.database import get_session
 from typing import List
 from src.crud.results import ResultsService
 from src.models.result import LeaderBoardResult, UserResult, UserResultDetail
+from authx import TokenPayload
+from src.api.security import security
 
 
 router = APIRouter(
@@ -38,6 +40,7 @@ async def get_sort_params(sort_by, allowed_fields, allowed_directions):
         sort_params.append((field, direction))
     return sort_params
 
+
 @router.get("/leaderboard", response_model=List[LeaderBoardResult])
 async def get(
         offset: int = 0,
@@ -71,14 +74,14 @@ async def get(
 
 @router.get("/my", response_model=List[UserResult])
 async def get_my_results(
-        user_id: int,
         offset: int = 0,
         limit: int = 10,
         session: AsyncSession = Depends(get_session),
         sort_by: List[str] = Query(
             ["prize:desc"],
             description="Sorting criteria in format 'field:direction' (e.g., 'prize:asc')"
-        )
+        ),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     allowed_fields = {"id", "date", "prize", "duration", "questions_amount", "result"}
     allowed_directions = {"asc", "desc"}
@@ -90,20 +93,22 @@ async def get_my_results(
     )
 
     return await ResultsService.get_user_results(
-        user_id=user_id,
         offset=offset,
         limit=limit,
         session=session,
-        sort_by=sort_params
+        sort_by=sort_params,
+        payload=payload
     )
 
 
 @router.get("/my/details/{game_id}", response_model=List[UserResultDetail])
 async def get_game_details(
         game_id: int,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await ResultsService.get_details(
         game_id=game_id,
-        session=session
+        session=session,
+        payload=payload
     )

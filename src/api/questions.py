@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.database import get_session
 from src.models.question import QuestionGetter, QuestionSetter
 from src.crud.questions import QuestionService
+from src.api.security import security
+from authx import TokenPayload
 
 from typing import List
 
@@ -46,9 +48,11 @@ async def get_random(
 @router.post("/add", response_model=QuestionSetter | None)
 async def add(
         data: QuestionSetter,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
+        payload: TokenPayload = Depends(security.access_token_required),
 ):
     return await QuestionService.add(
         data=data,
-        session=session
+        session=session,
+        payload=payload
     )
