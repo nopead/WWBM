@@ -1,8 +1,8 @@
 from src.schemas.hint import Hint as HintORM
 from src.models.hint import HintSetter as HintDataModel
-from src.models.http_response import HTTPResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from fastapi import HTTPException, Response
 
 
 class HintService:
@@ -47,12 +47,18 @@ class HintService:
                 hint.name = new_data.name
                 hint.icon_link = new_data.icon_link
                 await session.commit()
-                return hint
+                return Response(
+                    status_code=200,
+                    content="hint updated successfully"
+                )
             except Exception as e:
                 await session.rollback()
                 raise e
         else:
-            return HTTPResponse(status_code=404, detail="hint not found")
+            raise HTTPException(
+                status_code=404,
+                detail="hint not found"
+            )
 
     @staticmethod
     async def delete(id: int, session: AsyncSession):
@@ -63,9 +69,15 @@ class HintService:
             try:
                 await session.delete(hint)
                 await session.commit()
-                return HTTPResponse(status_code=200, detail="hint deleted successfully")
+                return Response(
+                    status_code=200,
+                    content="hint deleted successfully"
+                )
             except Exception as e:
                 await session.rollback()
                 raise e
         else:
-            return HTTPResponse(status_code=404, detail="hint not found")
+            raise HTTPException(
+                status_code=404,
+                detail="hint not found"
+            )

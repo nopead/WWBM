@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.hint import HintSetter, HintGetter
-from src.models.http_response import HTTPResponse
 from src.crud.hints import HintService
 from src.db.database import get_session
 
@@ -25,7 +24,7 @@ async def get(
     )
 
 
-@router.get("/{hint_id}", response_model=HintGetter | HTTPResponse)
+@router.get("/{hint_id}", response_model=HintGetter | None)
 async def get_by_id(
         id: int,
         session: AsyncSession = Depends(get_session)
@@ -36,7 +35,7 @@ async def get_by_id(
     )
 
 
-@router.post("/", response_model=HintSetter | HTTPResponse)
+@router.post("/", response_model=HintSetter | None)
 async def add(
         data: HintSetter,
         session: AsyncSession = Depends(get_session)
@@ -47,7 +46,7 @@ async def add(
     )
 
 
-@router.put("/", response_model=HintGetter | HTTPResponse)
+@router.put("/", response_model=HintGetter | None)
 async def update(
         id: int,
         new_data: HintSetter,
@@ -60,7 +59,7 @@ async def update(
     )
 
 
-@router.delete("/{hint_id}", response_model=HTTPResponse)
+@router.delete("/{hint_id}", response_model=None)
 async def delete(
         id: int,
         session: AsyncSession = Depends(get_session)

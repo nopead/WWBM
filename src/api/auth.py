@@ -4,6 +4,8 @@ from src.config import JWT_SECRET_KEY
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.database import get_session
 from src.crud.auth import AuthService
+from src.models.auth import UserLoginModel, UserRegistrationModel
+
 
 auth_config = AuthXConfig()
 auth_config.JWT_SECRET_KEY = JWT_SECRET_KEY
