@@ -7,7 +7,6 @@ from src.schemas.hint import Hint
 from sqlalchemy import select, asc, desc, func, case, and_
 from src.models.result import LeaderBoardResult, UserResult, UserResultDetail
 from authx import TokenPayload
-from src.crud.auth import AuthService
 from src.crud.users import UserService
 from fastapi import HTTPException
 

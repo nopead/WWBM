@@ -1,5 +1,5 @@
 import datetime
-from fastapi import HTTPException, Request
+from fastapi import HTTPException
 from src.schemas.game import (Game as GameORM,
                               Prize as PrizeORM,
                               GameFinishReason as GameFinishReasonORM,
